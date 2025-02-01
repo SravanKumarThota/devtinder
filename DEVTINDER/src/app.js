@@ -5,14 +5,7 @@ const express = require("express");
 const app = express();
 
 app.post('/signup', async (req, res) => {
-  const userData = {
-    firstname: "Sravan",
-    lastName: "Thota",
-    emailId: "thotasravankumar099@gmail.com",
-    password: "qwertyuiop",
-    age: 23,
-    gender: "M"
-  }
+  const userData = req.body
   const user = new User(userData);
   await user.save();
   res.send("User added Successfully...");
