@@ -1,5 +1,7 @@
 const mongoose = require("mongoose");
 var validator = require("validator");
+const jwt = require('jsonwebtoken');
+const becrypt = require('bcrypt');
 
 const userSchema = new mongoose.Schema(
   {
@@ -64,6 +66,19 @@ const userSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
+
+userSchema.methods.getjwt = async function () {
+  const user = this;
+  const userJwtToken = jwt.sign({ _id: user._id }, "TSK@luffy@123", { expiresIn: '3d' });
+  return userJwtToken;
+}
+
+userSchema.methods.validatePassword = async function(password) {
+  const user = this;
+  const passwordHash = user.password
+  const isPasswordValid = await becrypt.compare(password, passwordHash);
+  return isPasswordValid
+}
 
 module.exports = mongoose.model("User", userSchema);
 // module.exports = mongoose.model('User', userSchema,'users'); -- this would be the custom name for the collections

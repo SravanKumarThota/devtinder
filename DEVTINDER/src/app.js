@@ -1,11 +1,15 @@
 const connectDB  = require("./config/database");
 const User = require('./models/user')
-const {validateSignUpData} = require('./utils/validation')
+const { validateSignUpData } = require('./utils/validation')
 
+const cookieParser = require('cookie-parser')
 const express = require("express");
 const becrypt = require('bcrypt');
+
 const app = express();
 app.use(express.json());
+app.use(cookieParser());
+const { userAuth } = require('./middlewares/auth');
 
 
 app.post("/signup", async (req, res) => {
@@ -38,17 +42,30 @@ app.post('/login', async (req, res) => {
     if (!user) {
       throw new Error("Invalid Credentials.");
     }
-    const validPassword = await becrypt.compare( password, user.password);
+    const validPassword = await user.validatePassword(password);
     if (!validPassword ){
       throw new Error("Please enter a valid Password");
     }
     else {
+      const token = await user.getjwt();
+      res.cookie("token", token, {
+        expires: new Date(Date.now()+ 8* 3600000)
+      });
       res.send("Login Successfull");
     }
   }
   catch (err){
     res.status(400).send("ERROR: " + err.message);
   }
+})
+
+app.get('/profile',userAuth, async (req, res) => {
+  try {
+    res.send(req.user);
+  } catch (err) {
+    res.status(400).send(err.message);
+  }
+  
 })
 
 app.get('/user/:userId', async (req, res) => {
@@ -73,7 +90,7 @@ app.get('/feed', async (req, res) => {
   }
 })
 
-app.post('/user', async (req, res) => {
+app.post('/user', userAuth, async (req, res) => {
   const email = req.body?.email;
   try {
     if (!email)
